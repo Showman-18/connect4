@@ -9,17 +9,17 @@ const HUMAN_MODE = 'human'
 const AI_MODE = 'ai'
 const SEARCH_DEPTH = 4
 
-function createEmptyBoard() {
+function createEmptyGrid() {
   return Array.from({ length: ROWS }, () => Array(COLUMNS).fill(null))
 }
 
-function cloneBoard(board) {
-  return board.map((row) => [...row])
+function cloneGrid(grid) {
+  return grid.map((row) => [...row])
 }
 
-function getAvailableRow(board, column) {
+function getAvailableRow(grid, column) {
   for (let row = ROWS - 1; row >= 0; row -= 1) {
-    if (board[row][column] === null) {
+    if (grid[row][column] === null) {
       return row
     }
   }
@@ -27,11 +27,11 @@ function getAvailableRow(board, column) {
   return -1
 }
 
-function getValidColumns(board) {
+function getValidColumns(grid) {
   const validColumns = []
 
   for (let column = 0; column < COLUMNS; column += 1) {
-    if (board[0][column] === null) {
+    if (grid[0][column] === null) {
       validColumns.push(column)
     }
   }
@@ -39,19 +39,19 @@ function getValidColumns(board) {
   return validColumns
 }
 
-function applyMove(board, column, player) {
-  const row = getAvailableRow(board, column)
+function applyMove(grid, column, player) {
+  const row = getAvailableRow(grid, column)
 
   if (row === -1) {
     return null
   }
 
-  const nextBoard = cloneBoard(board)
-  nextBoard[row][column] = player
-  return nextBoard
+  const nextGrid = cloneGrid(grid)
+  nextGrid[row][column] = player
+  return nextGrid
 }
 
-function getWinner(board) {
+function getWinner(grid) {
   const directions = [
     [0, 1],
     [1, 0],
@@ -61,7 +61,7 @@ function getWinner(board) {
 
   for (let row = 0; row < ROWS; row += 1) {
     for (let column = 0; column < COLUMNS; column += 1) {
-      const player = board[row][column]
+      const player = grid[row][column]
 
       if (!player) {
         continue
@@ -79,7 +79,7 @@ function getWinner(board) {
             nextRow >= ROWS ||
             nextColumn < 0 ||
             nextColumn >= COLUMNS ||
-            board[nextRow][nextColumn] !== player
+            grid[nextRow][nextColumn] !== player
           ) {
             break
           }
@@ -129,27 +129,27 @@ function evaluateWindow(window) {
   return 0
 }
 
-function scoreBoard(board) {
+function scoreGrid(grid) {
   let score = 0
 
   const centerColumn = Math.floor(COLUMNS / 2)
-  const centerColumnValues = board.map((row) => row[centerColumn])
+  const centerColumnValues = grid.map((row) => row[centerColumn])
   score +=
     centerColumnValues.filter((cell) => cell === AI_PLAYER).length * 3
 
   for (let row = 0; row < ROWS; row += 1) {
     for (let column = 0; column < COLUMNS - 3; column += 1) {
-      score += evaluateWindow(board[row].slice(column, column + 4))
+      score += evaluateWindow(grid[row].slice(column, column + 4))
     }
   }
 
   for (let column = 0; column < COLUMNS; column += 1) {
     for (let row = 0; row < ROWS - 3; row += 1) {
       score += evaluateWindow([
-        board[row][column],
-        board[row + 1][column],
-        board[row + 2][column],
-        board[row + 3][column],
+        grid[row][column],
+        grid[row + 1][column],
+        grid[row + 2][column],
+        grid[row + 3][column],
       ])
     }
   }
@@ -157,10 +157,10 @@ function scoreBoard(board) {
   for (let row = 0; row < ROWS - 3; row += 1) {
     for (let column = 0; column < COLUMNS - 3; column += 1) {
       score += evaluateWindow([
-        board[row][column],
-        board[row + 1][column + 1],
-        board[row + 2][column + 2],
-        board[row + 3][column + 3],
+        grid[row][column],
+        grid[row + 1][column + 1],
+        grid[row + 2][column + 2],
+        grid[row + 3][column + 3],
       ])
     }
   }
@@ -168,10 +168,10 @@ function scoreBoard(board) {
   for (let row = 3; row < ROWS; row += 1) {
     for (let column = 0; column < COLUMNS - 3; column += 1) {
       score += evaluateWindow([
-        board[row][column],
-        board[row - 1][column + 1],
-        board[row - 2][column + 2],
-        board[row - 3][column + 3],
+        grid[row][column],
+        grid[row - 1][column + 1],
+        grid[row - 2][column + 2],
+        grid[row - 3][column + 3],
       ])
     }
   }
@@ -179,10 +179,10 @@ function scoreBoard(board) {
   return score
 }
 
-function minimax(board, depth, alpha, beta, isMaximizing) {
-  const winner = getWinner(board)
-  const validColumns = getValidColumns(board)
-  const boardIsFull = validColumns.length === 0
+function minimax(grid, depth, alpha, beta, isMaximizing) {
+  const winner = getWinner(grid)
+  const validColumns = getValidColumns(grid)
+  const gridIsFull = validColumns.length === 0
 
   if (winner === AI_PLAYER) {
     return { column: null, score: 100000 + depth }
@@ -192,8 +192,8 @@ function minimax(board, depth, alpha, beta, isMaximizing) {
     return { column: null, score: -100000 - depth }
   }
 
-  if (depth === 0 || boardIsFull) {
-    return { column: null, score: scoreBoard(board) }
+  if (depth === 0 || gridIsFull) {
+    return { column: null, score: scoreGrid(grid) }
   }
 
   if (isMaximizing) {
@@ -201,13 +201,13 @@ function minimax(board, depth, alpha, beta, isMaximizing) {
     let bestColumn = validColumns[0]
 
     for (const column of validColumns) {
-      const nextBoard = applyMove(board, column, AI_PLAYER)
+      const nextGrid = applyMove(grid, column, AI_PLAYER)
 
-      if (!nextBoard) {
+      if (!nextGrid) {
         continue
       }
 
-      const result = minimax(nextBoard, depth - 1, alpha, beta, false)
+      const result = minimax(nextGrid, depth - 1, alpha, beta, false)
 
       if (result.score > bestScore) {
         bestScore = result.score
@@ -228,13 +228,13 @@ function minimax(board, depth, alpha, beta, isMaximizing) {
   let bestColumn = validColumns[0]
 
   for (const column of validColumns) {
-    const nextBoard = applyMove(board, column, HUMAN_PLAYER)
+    const nextGrid = applyMove(grid, column, HUMAN_PLAYER)
 
-    if (!nextBoard) {
+    if (!nextGrid) {
       continue
     }
 
-    const result = minimax(nextBoard, depth - 1, alpha, beta, true)
+    const result = minimax(nextGrid, depth - 1, alpha, beta, true)
 
     if (result.score < bestScore) {
       bestScore = result.score
@@ -251,19 +251,19 @@ function minimax(board, depth, alpha, beta, isMaximizing) {
   return { column: bestColumn, score: bestScore }
 }
 
-function getBestAIMove(board) {
-  return minimax(board, SEARCH_DEPTH, -Infinity, Infinity, true).column
+function getBestAIMove(grid) {
+  return minimax(grid, SEARCH_DEPTH, -Infinity, Infinity, true).column
 }
 
 function App() {
-  const [board, setBoard] = useState(createEmptyBoard)
+  const [grid, setGrid] = useState(createEmptyGrid)
   const [currentPlayer, setCurrentPlayer] = useState(HUMAN_PLAYER)
   const [winner, setWinner] = useState(null)
   const [isDraw, setIsDraw] = useState(false)
   const [gameMode, setGameMode] = useState(HUMAN_MODE)
 
   useEffect(() => {
-    const gameWinner = getWinner(board)
+    const gameWinner = getWinner(grid)
 
     if (gameWinner) {
       setWinner(gameWinner)
@@ -271,11 +271,11 @@ function App() {
       return
     }
 
-    const boardIsFull = board.every((row) => row.every((cell) => cell !== null))
+    const gridIsFull = grid.every((row) => row.every((cell) => cell !== null))
 
     setWinner(null)
-    setIsDraw(boardIsFull)
-  }, [board])
+    setIsDraw(gridIsFull)
+  }, [grid])
 
   useEffect(() => {
     if (gameMode !== AI_MODE || currentPlayer !== AI_PLAYER || winner || isDraw) {
@@ -283,24 +283,24 @@ function App() {
     }
 
     const timer = window.setTimeout(() => {
-      const aiMove = getBestAIMove(board)
+      const aiMove = getBestAIMove(grid)
 
       if (aiMove === null || aiMove === undefined) {
         return
       }
 
-      const nextBoard = applyMove(board, aiMove, AI_PLAYER)
+      const nextGrid = applyMove(grid, aiMove, AI_PLAYER)
 
-      if (!nextBoard) {
+      if (!nextGrid) {
         return
       }
 
-      setBoard(nextBoard)
+      setGrid(nextGrid)
       setCurrentPlayer(HUMAN_PLAYER)
     }, 300)
 
     return () => window.clearTimeout(timer)
-  }, [board, currentPlayer, gameMode, isDraw, winner])
+  }, [grid, currentPlayer, gameMode, isDraw, winner])
 
   function dropPiece(column) {
     if (winner || isDraw) {
@@ -311,20 +311,20 @@ function App() {
       return
     }
 
-    const nextBoard = applyMove(board, column, currentPlayer)
+    const nextGrid = applyMove(grid, column, currentPlayer)
 
-    if (!nextBoard) {
+    if (!nextGrid) {
       return
     }
 
-    setBoard(nextBoard)
+    setGrid(nextGrid)
     setCurrentPlayer((previousPlayer) =>
       previousPlayer === HUMAN_PLAYER ? AI_PLAYER : HUMAN_PLAYER,
     )
   }
 
   function resetGame() {
-    setBoard(createEmptyBoard())
+    setGrid(createEmptyGrid())
     setCurrentPlayer(HUMAN_PLAYER)
     setWinner(null)
     setIsDraw(false)
@@ -332,7 +332,7 @@ function App() {
 
   function changeMode(nextMode) {
     setGameMode(nextMode)
-    setBoard(createEmptyBoard())
+    setGrid(createEmptyGrid())
     setCurrentPlayer(HUMAN_PLAYER)
     setWinner(null)
     setIsDraw(false)
@@ -372,7 +372,7 @@ function App() {
         <p className="status">{statusMessage}</p>
 
         <div className="board" role="grid" aria-label="Connect 4 board">
-          {board.map((row, rowIndex) =>
+          {grid.map((row, rowIndex) =>
             row.map((cell, columnIndex) => (
               <button
                 key={`${rowIndex}-${columnIndex}`}
