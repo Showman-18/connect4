@@ -53,3 +53,4 @@ For a detailed explanation of every function, algorithm step, and game tree exam
 | `npm run build` | Build for production |
 | `npm run lint` | Run ESLint |
 | `npm run preview` | Preview production build |
+https://spectacular-treacle-1d325c.netlify.app
