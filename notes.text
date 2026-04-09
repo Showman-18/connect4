@@ -1,0 +1,7 @@
+4 AI discs: +1000
+4 Human discs: -1000
+3 AI + 1 empty: +50
+2 AI + 2 empty: +10
+3 Human + 1 empty: -80
+2 Human + 2 empty: -10
+otherwise: 0

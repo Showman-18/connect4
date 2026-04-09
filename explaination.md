@@ -6,8 +6,8 @@ It also has a second mode where you can play against a computer opponent.
 
 ## State variables used with `useState`
 
-### `board`
-`board` stores the whole game board.
+### `grid`
+`grid` stores the whole game board.
 It is a 6 x 7 array, which means 6 rows and 7 columns.
 Each cell can be:
 - `null` if it is empty
@@ -29,7 +29,7 @@ When 4 discs in a row are found, this state becomes `Red` or `Yellow`.
 ### `isDraw`
 `isDraw` stores whether the game ended in a draw.
 It starts as `false`.
-It becomes `true` when the board is full and no player has won.
+It becomes `true` when the grid is full and no player has won.
 
 ### `gameMode`
 `gameMode` stores which mode is active.
@@ -37,24 +37,24 @@ It can be:
 - `human` for two human players
 - `ai` for human vs computer
 
-When the mode changes, the game resets so the board starts fresh.
+When the mode changes, the game resets so the grid starts fresh.
 
 ## `useEffect` used in the game
 
-The `useEffect` checks the board every time the `board` state changes.
+The first `useEffect` checks the grid every time the `grid` state changes.
 
 ### What it does
-1. It calls `getWinner(board)`.
+1. It calls `getWinner(grid)`.
 2. If a winner is found, it updates `winner` and clears `isDraw`.
 3. If there is no winner, it checks whether all spaces are filled.
-4. If the board is full, it sets `isDraw` to `true`.
+4. If the grid is full, it sets `isDraw` to `true`.
 5. If the game is still running, it keeps `winner` as `null` and `isDraw` as `false`.
 
 ### Why `useEffect` is used here
-`useEffect` is used because the winner should be checked after the board updates.
+`useEffect` is used because the winner should be checked after the grid updates.
 That keeps the game logic simple:
 - click a column
-- update the board
+- update the grid
 - let `useEffect` check if someone won
 
 There is a second `useEffect` for AI mode.
@@ -63,12 +63,12 @@ That effect waits a short time, finds the best move with minimax, and then drops
 
 ## Functions used in the game
 
-### `createEmptyBoard()`
+### `createEmptyGrid()`
 This function creates a fresh 6 x 7 empty board.
 It is used when the game first starts and when the reset button is clicked.
 
-### `getWinner(board)`
-This function checks the board for 4 matching discs in a row.
+### `getWinner(grid)`
+This function checks the grid for 4 matching discs in a row.
 It looks in 4 directions:
 - horizontal
 - vertical
@@ -85,7 +85,7 @@ It does these steps:
 2. Stops if it is AI mode and it is not the human player's turn.
 3. Finds the lowest empty cell in the clicked column.
 4. Places the current player's disc there.
-5. Updates the board.
+5. Updates the grid.
 6. Switches to the next player.
 
 ### `resetGame()`
@@ -96,11 +96,11 @@ It clears the board, sets the current player back to Red, and removes the winner
 This function switches between two-player mode and AI mode.
 It also resets the game so the new mode starts from an empty board.
 
-### `getBestAIMove(board)`
+### `getBestAIMove(grid)`
 This function finds the best move for the AI.
 It uses minimax with alpha-beta pruning to look ahead at possible moves and choose the strongest one.
 
-### `minimax(board, depth, alpha, beta, isMaximizing)`
+### `minimax(grid, depth, alpha, beta, isMaximizing)`
 This is the main AI function.
 It tries future moves in two ways:
 - maximizing when the AI is choosing
@@ -114,8 +114,8 @@ The function uses:
 When `alpha` becomes greater than or equal to `beta`, the search stops early.
 That is called alpha-beta pruning.
 
-### `scoreBoard(board)`
-This function gives the board a score when the search reaches the depth limit.
+### `scoreGrid(grid)`
+This function gives the grid a score when the search reaches the depth limit.
 It prefers:
 - center columns
 - 3 in a row with one open space
@@ -144,7 +144,7 @@ Minimax imagines future boards as a tree:
 - Next level: AI responses again
 
 Each level is one turn.
-At the end of the search (or when game ends), each leaf board gets a numeric score.
+At the end of the search (or when game ends), each leaf grid gets a numeric score.
 
 Then scores move upward:
 - AI level chooses the maximum score (best for AI)
@@ -161,10 +161,10 @@ If it is human turn, function assumes human will try to reduce AI score as much 
 
 ### 4. Terminal conditions (base cases)
 In the code, recursion stops when one of these happens:
-1. AI already wins on this board.
-2. Human already wins on this board.
+1. AI already wins on this grid.
+2. Human already wins on this grid.
 3. Search depth reaches 0.
-4. Board is full (draw position).
+4. Grid is full (draw position).
 
 Then function returns a score immediately.
 
@@ -180,7 +180,7 @@ Depth-limited search means:
 - Good enough for a classroom project and still intelligent
 
 ### 6. Evaluation function: how non-final boards get score
-If the board is not a final win/loss and depth limit is reached, AI uses `scoreBoard(board)`.
+If the grid is not a final win/loss and depth limit is reached, AI uses `scoreGrid(grid)`.
 
 The scoring logic uses short patterns of 4 cells (called "windows"):
 - 4 AI discs: very high positive score
@@ -191,7 +191,7 @@ The scoring logic uses short patterns of 4 cells (called "windows"):
 
 Also center column is rewarded because center positions participate in more possible 4-in-a-row lines.
 
-So the AI is not random. It is guided by board pattern quality.
+So the AI is not random. It is guided by grid pattern quality.
 
 ### 7. Alpha-beta pruning meaning
 Alpha-beta pruning is an optimization over minimax.
@@ -222,7 +222,7 @@ This means this branch can never beat AI's already known option (20).
 So remaining children in that minimizing node are pruned (skipped).
 
 ### 9. Recursive flow in this code (step-by-step)
-1. `getBestAIMove(board)` calls `minimax(board, depth, -Infinity, Infinity, true)`.
+1. `getBestAIMove(grid)` calls `minimax(grid, depth, -Infinity, Infinity, true)`.
 2. `true` means current node is maximizing (AI turn).
 3. `minimax` gets all valid columns.
 4. For each valid column:
@@ -258,17 +258,81 @@ With alpha-beta pruning, many branches are cut early, so practical search is oft
 "Minimax makes the AI choose the move with best worst-case outcome, and alpha-beta pruning skips branches that cannot affect the decision, making the search much faster without changing the final best move."
 
 ## How the game works in simple words
-The board is stored in state.
+The grid is stored in state.
 The player clicks a column.
 The disc goes to the bottom empty space in that column.
-After the board changes, `useEffect` checks if there is a winner or a draw.
+After the grid changes, `useEffect` checks if there is a winner or a draw.
 If someone gets 4 in a row, the game shows that player as the winner.
-In AI mode, the computer checks the board and chooses a move using minimax and alpha-beta pruning.
+In AI mode, the computer checks the grid and chooses a move using minimax and alpha-beta pruning.
 
 ## Things to say to your teacher
 - React is used to show the board on the screen.
-- `useState` stores the board and game information.
-- `useEffect` checks the board after every move.
-- The game is simple because the board is just an array.
-- The winner check is done by scanning the board in four directions.
+- `useState` stores the grid and game information.
+- `useEffect` checks the grid after every move.
+- The game is simple because the grid is just a 2D array.
+- The winner check is done by scanning the grid in four directions.
 - The AI uses minimax to search possible moves and alpha-beta pruning to skip unnecessary branches.
+
+## Step-by-step guide to explain to teacher
+
+Use this order while presenting. It is designed so each part naturally connects to the next.
+
+### Step 1: Start with the goal
+"I built a Connect 4 game in React with two modes: two-player mode and AI mode."
+
+### Step 2: Explain the data structure first (most important)
+"The core data structure is a 2D array called `grid` of size 6 x 7."
+"Each position is `null`, `Red`, or `Yellow`."
+"So every move is just updating `grid[r][c]`."
+
+### Step 3: Explain state variables
+1. `grid`: stores full board data.
+2. `currentPlayer`: whose turn now.
+3. `winner`: winner name if someone wins.
+4. `isDraw`: true if board is full with no winner.
+5. `gameMode`: `human` or `ai`.
+
+### Step 4: Explain helper functions
+1. `createEmptyGrid()` creates fresh 6 x 7 grid.
+2. `getAvailableRow(grid, c)` finds lowest empty row in that column.
+3. `applyMove(grid, c, player)` creates next grid with one move applied.
+4. `getValidColumns(grid)` returns playable columns.
+
+### Step 5: Explain winner checking
+"`getWinner(grid)` checks from every cell in 4 directions: horizontal, vertical, diagonal right, diagonal left."
+"If 4 same discs are connected, it returns that player."
+
+### Step 6: Explain React flow (`useEffect`)
+1. First effect runs whenever `grid` changes.
+2. It checks winner and draw.
+3. Second effect runs only in AI mode when it is AI turn.
+4. It computes best move and updates grid after a short delay.
+
+### Step 7: Explain user move flow
+"When user clicks a column, `dropPiece(c)` runs."
+"It rejects invalid situations (game over, AI turn, full column)."
+"Then it applies move and switches player."
+
+### Step 8: Explain AI idea in plain words
+"AI uses minimax to look ahead multiple moves and choose the best worst-case move."
+"AI is maximizing, human is minimizing."
+
+### Step 9: Explain alpha-beta pruning simply
+"Alpha-beta pruning skips branches that cannot improve the result."
+"So AI thinks faster but returns the same best move as normal minimax."
+
+### Step 10: Explain evaluation function
+"When depth limit is reached, `scoreGrid(grid)` estimates board quality."
+"It rewards AI patterns (2 or 3 in a row) and penalizes human threats."
+"It also rewards center column control."
+
+### Step 11: Explain complexity briefly
+"Without pruning, search grows quickly."
+"With depth 4 and alpha-beta pruning, it is fast enough for smooth gameplay."
+
+### Step 12: End with architecture summary
+"So architecture is: 2D array state + move helper functions + winner logic + minimax AI + React rendering."
+"This keeps code simple and easy to explain while still giving smart AI behavior."
+
+## 60-second script you can say directly
+"This project is a Connect 4 game built with React. I store the board as a 6 by 7 two-dimensional array called grid, where each cell is null, Red, or Yellow. When a player clicks a column, I place the disc in the lowest empty row of that column using helper functions. After every move, a useEffect checks if someone has 4 in a row in horizontal, vertical, or diagonal directions, and also checks draw condition. I added two modes: two-player mode and AI mode. In AI mode, Yellow is controlled by minimax with alpha-beta pruning. Minimax looks ahead several moves, assumes AI tries to maximize score and human tries to minimize it, and chooses the best worst-case move. Alpha-beta pruning removes branches that cannot affect the final decision, so AI becomes faster without changing correctness. The result is a simple and explainable structure with intelligent gameplay."
