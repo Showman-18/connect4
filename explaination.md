@@ -257,6 +257,134 @@ With alpha-beta pruning, many branches are cut early, so practical search is oft
 ### 12. One-line summary for viva/presentation
 "Minimax makes the AI choose the move with best worst-case outcome, and alpha-beta pruning skips branches that cannot affect the decision, making the search much faster without changing the final best move."
 
+## Game Tree Examples
+
+These examples show how minimax builds and searches the game tree.
+Each node shows which player is choosing and the resulting score.
+Square brackets `[pruned]` mean alpha-beta pruning stopped exploring that branch.
+
+### Game Tree at Depth 2
+
+Depth 2 means the AI looks one full round ahead: one AI move followed by one human reply.
+The AI tries every column, then imagines the human replying in every column, then scores each leaf grid.
+
+```
+ROOT (AI turn – maximising)
+├── Col 0 → AI drops Yellow in column 0
+│   ├── Col 0 → Human drops Red in col 0  → score = -5
+│   ├── Col 1 → Human drops Red in col 1  → score =  2
+│   ├── Col 2 → Human drops Red in col 2  → score =  8
+│   ├── Col 3 → Human drops Red in col 3  → score = -3
+│   ├── Col 4 → Human drops Red in col 4  → score =  1
+│   ├── Col 5 → Human drops Red in col 5  → score =  4
+│   └── Col 6 → Human drops Red in col 6  → score = -2
+│       Human picks minimum → min = -5   ← returned to parent
+│
+├── Col 1 → AI drops Yellow in column 1
+│   ├── Col 0 → Human drops Red in col 0  → score =  3
+│   ├── Col 1 → Human drops Red in col 1  → score =  6
+│   ├── Col 2 → Human drops Red in col 2  → score = -1
+│   ├── Col 3 → Human drops Red in col 3  → score =  9
+│   ...
+│       Human picks minimum → min = -1   ← returned to parent
+│
+├── Col 2 → AI drops Yellow in column 2
+│   ...  → Human picks minimum → min = 10  ← returned to parent
+│
+├── Col 3 → AI drops Yellow in column 3 (centre)
+│   ├── Col 0 → score = 12
+│   ├── Col 1 → score = 15
+│   ├── Col 2 → score = 20
+│   ├── Col 3 → score = 18
+│   ...
+│       Human picks minimum → min = 12  ← returned to parent
+│
+├── Col 4 → AI drops Yellow in column 4
+│   ...  → Human picks minimum → min =  7  ← returned to parent
+│
+├── Col 5 → AI drops Yellow in column 5
+│   ...  → Human picks minimum → min =  2  ← returned to parent
+│
+└── Col 6 → AI drops Yellow in column 6
+    ...  → Human picks minimum → min = -4  ← returned to parent
+
+AI picks maximum of { -5, -1, 10, 12, 7, 2, -4 } = 12
+✅ AI chooses Column 3
+```
+
+**Why the centre column wins here:**
+The centre column participates in more possible four-in-a-row lines than edge columns, so `scoreGrid` gives it a bonus. After depth-2 search, column 3 has the best guaranteed outcome.
+
+---
+
+### Game Tree at Depth 4
+
+Depth 4 means two full rounds of play: AI → Human → AI → Human.
+A real tree has up to 7⁴ = 2 401 leaf nodes before pruning.
+The example below shows **one path per branch** to keep it readable.
+Numbers at leaf nodes are heuristic scores from `scoreGrid`.
+
+```
+ROOT (AI – maximising, depth=4)
+│
+├── Col 0  (AI plays col 0, depth=3)
+│   └── Col 0  (Human plays col 0, depth=2, minimising)
+│       └── Col 0  (AI plays col 0, depth=1, maximising)
+│           └── Col 0  (Human plays col 0, depth=0) → score = -8
+│           └── Col 1  (Human plays col 1, depth=0) → score = -3
+│           └── ...
+│           AI max → 4,  returned up
+│       └── Col 1  (AI plays col 1, depth=1)
+│           └── ... → AI max → 6
+│       Human min of {4, 6, ...} → 4,  returned up
+│   └── Col 1  (Human plays col 1, depth=2)
+│       └── ... → min → 2
+│   Human min of {4, 2, ...} → 2,  returned up
+│
+├── Col 3  (AI plays col 3 – centre, depth=3)
+│   └── Col 2  (Human plays col 2, depth=2, minimising)
+│       └── Col 3  (AI plays col 3, depth=1, maximising)
+│           └── Col 1  (Human plays col 1, depth=0) → score = 18
+│           └── Col 3  (Human plays col 3, depth=0) → score = 22
+│           AI max → 22
+│       └── Col 4  (AI plays col 4, depth=1)
+│           └── ... → AI max → 15
+│       Human min of {22, 15, ...} → 15
+│   └── Col 3  (Human plays col 3, depth=2)
+│       └── ...
+│       └── ... alpha-beta: alpha(15) >= beta early → [pruned]
+│   └── Col 4  (Human plays col 4, depth=2) → [pruned]
+│   Human min of {15, pruned, pruned} → 15,  returned up
+│
+├── Col 1  (AI plays col 1, depth=3)
+│   └── ... Human min → 9
+│
+├── Col 2  (AI plays col 2, depth=3)
+│   └── ... Human min → 11
+│
+├── Col 4  (AI plays col 4, depth=3)
+│   └── ... Human min → 10  [some branches pruned]
+│
+├── Col 5  (AI plays col 5, depth=3)
+│   └── ... Human min → 3   [several branches pruned]
+│
+└── Col 6  (AI plays col 6, depth=3)
+    └── ... Human min → -2  [many branches pruned]
+
+AI picks maximum of { 2, 15, 9, 11, 10, 3, -2 } = 15
+✅ AI chooses Column 3
+```
+
+**What alpha-beta pruning does here:**
+After the AI confirms that column 3 gives a guaranteed score of 15, any other branch that the human can force below 15 is skipped.
+In the example above, when the human explores column 3 inside the "Col 3" branch and quickly finds a reply that keeps the score at 15 or below, the remaining human replies in that sub-tree are pruned because they cannot improve the AI's decision.
+
+**Reading the tree:**
+- Levels alternate: AI maximises → Human minimises → AI maximises → Human minimises.
+- Leaf scores come from `scoreGrid(grid)` at depth = 0.
+- Each inner node returns the max or min of its children back to its parent.
+- The root takes the maximum → that column is played.
+
 ## How the game works in simple words
 The grid is stored in state.
 The player clicks a column.
@@ -289,7 +417,7 @@ Use this order while presenting. It is designed so each part naturally connects 
 1. `grid`: stores full board data.
 2. `currentPlayer`: whose turn now.
 3. `winner`: winner name if someone wins.
-4. `isDraw`: true if board is full with no winner.
+4. `isDraw`: true if grid is full with no winner.
 5. `gameMode`: `human` or `ai`.
 
 ### Step 4: Explain helper functions
@@ -335,4 +463,4 @@ Use this order while presenting. It is designed so each part naturally connects 
 "This keeps code simple and easy to explain while still giving smart AI behavior."
 
 ## 60-second script you can say directly
-"This project is a Connect 4 game built with React. I store the board as a 6 by 7 two-dimensional array called grid, where each cell is null, Red, or Yellow. When a player clicks a column, I place the disc in the lowest empty row of that column using helper functions. After every move, a useEffect checks if someone has 4 in a row in horizontal, vertical, or diagonal directions, and also checks draw condition. I added two modes: two-player mode and AI mode. In AI mode, Yellow is controlled by minimax with alpha-beta pruning. Minimax looks ahead several moves, assumes AI tries to maximize score and human tries to minimize it, and chooses the best worst-case move. Alpha-beta pruning removes branches that cannot affect the final decision, so AI becomes faster without changing correctness. The result is a simple and explainable structure with intelligent gameplay."
+"This project is a Connect 4 game built with React. I store the game state as a 6 by 7 two-dimensional array called grid, where each cell is null, Red, or Yellow. When a player clicks a column, I place the disc in the lowest empty row of that column using helper functions. After every move, a useEffect checks if someone has 4 in a row in horizontal, vertical, or diagonal directions, and also checks draw condition. I added two modes: two-player mode and AI mode. In AI mode, Yellow is controlled by minimax with alpha-beta pruning. Minimax looks ahead several moves, assumes AI tries to maximize score and human tries to minimize it, and chooses the best worst-case move. Alpha-beta pruning removes branches that cannot affect the final decision, so AI becomes faster without changing correctness. The result is a simple and explainable structure with intelligent gameplay."
